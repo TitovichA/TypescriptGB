@@ -1,55 +1,28 @@
 import { renderBlock } from './lib.js';
-export function renderSearchFormBlock(dateCheckIn, dateCheckout) {
-    const TWO_DAYS = 2;
-    const ONE_MONTH = 1;
-    const TWO_MONTHS = 2;
-    const today = new Date;
-    // минимально возможная дата заселения и выселения
-    const min = `${today.getFullYear()}-${('0' + (today.getMonth() + ONE_MONTH)).slice(-2)}-${today.getDate()}`;
-    // максимально возможная дата заселения выселения
-    function findMax(objDate) {
-        const lastDayOfNextMonth = new Date(objDate.getFullYear(), objDate.getMonth() + TWO_MONTHS, 0);
-        return `${lastDayOfNextMonth.getFullYear()}-${('0' + (lastDayOfNextMonth.getMonth() + ONE_MONTH)).slice(-2)}-${lastDayOfNextMonth.getDate()}`;
-    }
-    //переведенная в нужный формат дата заезда по умолчанию
-    const defaultDCI = new Date(today.setDate(today.getDate() + 1));
-    console.log(defaultDCI);
-    const transformedDefaultDCI = `${defaultDCI.getFullYear()}-${('0' + (defaultDCI.getMonth() + ONE_MONTH)).slice(-2)}-${defaultDCI.getDate()}`;
-    //функция возвращает выезд по умолчанию для даты заезда по умолчанию и для введенной даты заезда
-    function defaultCheckout(objDate) {
-        const defaultDCO = new Date(objDate.setDate(objDate.getDate() + TWO_DAYS));
-        return `${defaultDCO.getFullYear()}-${('0' + (defaultDCO.getMonth() + ONE_MONTH)).slice(-2)}-${('0' + defaultDCO.getDate()).slice(-2)}`;
-    }
-    let checkIn;
-    let checkOut;
-    let maxCheckOut;
-    let maxDefault;
-    let minCheckout;
-    if (dateCheckIn === '') {
-        checkIn = transformedDefaultDCI;
-        checkOut = (dateCheckout === '') ? defaultCheckout(defaultDCI) : dateCheckout;
-        maxDefault = findMax(defaultDCI);
-        maxCheckOut = findMax(defaultDCI);
-        minCheckout = transformedDefaultDCI;
+export function renderSearchFormBlock(checkin, checkout) {
+    const selectedCheckin = checkin.getFullYear() + '-0' + (checkin.getMonth() + 1) + '-' + checkin.getDate();
+    let selectedCheckout = '';
+    if (checkout) {
+        selectedCheckout = checkout.getFullYear() + '-0' + (checkout.getMonth() + 1) + '-' + checkout.getDate();
     }
     else {
-        const dciInToObj = new Date(dateCheckIn);
-        console.log(dciInToObj);
-        const dci = `${dciInToObj.getFullYear()}-${('0' + (dciInToObj.getMonth() + ONE_MONTH)).slice(-2)}-${('0' + dciInToObj.getDate()).slice(-2)}`;
-        checkIn = dci;
-        checkOut = (dateCheckout === '') ? defaultCheckout(dciInToObj) : dateCheckout;
-        maxDefault = findMax(dciInToObj);
-        minCheckout = dci;
-        maxCheckOut = findMax(dciInToObj);
+        checkin.setDate(checkin.getDate() + 2);
+        selectedCheckout = checkin.getFullYear() + '-0' + (checkin.getMonth() + 1) + '-' + checkin.getDate();
+        checkin.setDate(checkin.getDate() - 2);
+    }
+    const minCheckout = checkin.getFullYear() + '-0' + (checkin.getMonth() + 1) + '-' + (checkin.getDate() - 1);
+    const currentDate = new Date(checkin.getFullYear(), checkin.getMonth() + 1, 0);
+    const maxCheckout = currentDate.getFullYear() + '-' + (currentDate.getMonth() + 2) + '-' + currentDate.getDate();
+    function searchItem(value) {
+        console.log(value);
     }
     renderBlock('search-form-block', `
-    <form id="form">
+    <form id='searchForm'>
       <fieldset class="search-filedset">
-      <form>
         <div class="row">
           <div>
             <label for="city">Город</label>
-            <input id="city" type="text" disabled value="Санкт-Петербург" />
+            <input id="city" type="text" name="city" disabled value="Санкт-Петербург" />
             <input type="hidden" disabled value="59.9386,30.3141" />
           </div>
           <!--<div class="providers">
@@ -59,24 +32,46 @@ export function renderSearchFormBlock(dateCheckIn, dateCheckout) {
         </div>
         <div class="row">
           <div>
-            <label for="check-in-date">Дата заезда</label>
-            <input id="check-in-date" type="date" value="${checkIn}" 
-            min="${min}" max="${maxDefault}" name="checkin" />
-  </div>
-  <div>
-  <label for="check-out-date"> Дата выезда </label>
-    <input id="check-out-date" type ="date" value="${checkOut}" min="${minCheckout}" max="${maxCheckOut}" name="checkout"/>
-      </div>
-      <div>
-      <label for="max-price"> Макс.цена суток </label>
-        <input id="max-price" type="text" value="" name="price" class="max-price"/>
+            <label for="check-in-date">Дата заезда </label>
+            <input id="check-in-date" type="date" value=${selectedCheckin} min=${minCheckout} max=${maxCheckout}  name="checkin" />
           </div>
           <div>
-          <div><button type="submit">Найти </button></div>
+            <label for="check-out-date">Дата выезда</label>
+            <input id="check-out-date" type="date" value=${selectedCheckout} min=${minCheckout} max=${maxCheckout} name="checkout" />
           </div>
+          <div>
+            <label for="max-price">Макс. цена суток</label>
+            <input id="max-price" type="text" value="" name="price" class="max-price" />
           </div>
-          </form>
-          </fieldset>
-          </form>
-            `);
+          <div>
+            <div><button type='submit'>Найти</button></div>
+          </div>
+        </div>
+      </fieldset>
+    </form>
+    `);
+    const form = document.getElementById('searchForm');
+    const checkinElement = document.getElementById('check-in-date');
+    const checkoutElement = document.getElementById('check-out-date');
+    const priceElement = document.getElementById('max-price');
+    checkinElement.addEventListener('change', function (event) {
+        checkinElement.setAttribute('value', event.target.value);
+    });
+    checkoutElement.addEventListener('change', function (event) {
+        checkoutElement.setAttribute('value', event.target.value);
+    });
+    priceElement.addEventListener('change', function (event) {
+        priceElement.setAttribute('value', event.target.value);
+    });
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const city = document.getElementById('city');
+        searchItem({
+            'city': city.getAttribute('value'),
+            'checkin': new Date(checkinElement.getAttribute('value')),
+            'checkout': new Date(checkoutElement.getAttribute('value')),
+            'price': +priceElement.getAttribute('value')
+        });
+        return searchItem;
+    });
 }
