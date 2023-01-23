@@ -1,46 +1,93 @@
-import { renderBlock } from './lib.js'
+import {
+  renderBlock,
+  getISODate,
+  getLastDayOfMonth,
+  dateToUnixStamp,
+  responseToJson,
+} from './lib.js';
+import { renderSearchResultsBlock } from './search-results.js';
 
-export function renderSearchFormBlock(checkin: Date, checkout?: Date): void {
-  const selectedCheckin = checkin.getFullYear() + '-0' + (checkin.getMonth() + 1) + '-' + checkin.getDate();
+interface SearchFormData {
+  city: string;
+  checkin: Date;
+  checkout: Date;
+  maxprice: number | null;
+  coordinates: string;
+}
+export interface Place {
+  id: number;
+  image: string;
+  name: string;
+  description: string;
+  remoteness: number;
+  bookedDates: number[];
+  price: number;
+}
 
-  let selectedCheckout = '';
-  if (checkout) {
-    selectedCheckout = checkout.getFullYear() + '-0' + (checkout.getMonth() + 1) + '-' + checkout.getDate();
+export function getFormData(): void {
+  const form = document.getElementById('form') as HTMLFormElement;
+  form.addEventListener('submit', (e: SubmitEvent) => {
+    e.preventDefault();
+    const city: HTMLInputElement = document.getElementById(
+      'city'
+    ) as HTMLInputElement,
+      checkin: HTMLInputElement = document.getElementById(
+        'check-in-date'
+      ) as HTMLInputElement,
+      checkout: HTMLInputElement = document.getElementById(
+        'check-out-date'
+      ) as HTMLInputElement,
+      maxprice: HTMLInputElement = document.getElementById(
+        'max-price'
+      ) as HTMLInputElement,
+      coordinates: HTMLInputElement = document.getElementById(
+        'coordinates'
+      ) as HTMLInputElement;
+    const data: SearchFormData = {
+      city: city.value,
+      checkin: new Date(checkin.value),
+      checkout: new Date(checkout.value),
+      maxprice: maxprice.value ? +maxprice.value : null,
+      coordinates: coordinates.value,
+    };
+    search(data).then((places: Place[]) => renderSearchResultsBlock(places));
+  });
+}
+
+function search(data: SearchFormData) {
+  let url: string =
+    'http://localhost:3030/places?' +
+    `checkInDate=${dateToUnixStamp(data.checkin)}&` +
+    `checkOutDate=${dateToUnixStamp(data.checkout)}&` +
+    `coordinates=${data.coordinates}`;
+
+  if (data.maxprice != null) {
+    url += `&maxPrice=${data.maxprice}`;
   }
-  else {
-    checkin.setDate(checkin.getDate() + 2);
-    selectedCheckout = checkin.getFullYear() + '-0' + (checkin.getMonth() + 1) + '-' + checkin.getDate();
-    checkin.setDate(checkin.getDate() - 2)
-  }
 
-  const minCheckout = checkin.getFullYear() + '-0' + (checkin.getMonth() + 1) + '-' + (checkin.getDate() - 1);
-  const currentDate = new Date(checkin.getFullYear(), checkin.getMonth() + 1, 0);
-  const maxCheckout = currentDate.getFullYear() + '-' + (currentDate.getMonth() + 2) + '-' + currentDate.getDate();
+  return responseToJson(fetch(url));
+}
 
-
-  interface SearchFormData {
-    city: string,
-    checkin: Date,
-    checkout: Date,
-    price: number,
-  }
-
-  function searchItem(value: SearchFormData): void {
-    console.log(value)
-  }
-
-
+export function renderSearchFormBlock(checkin = '', checkout = ''): void {
+  const minDate = new Date(),
+    maxDate = new Date(),
+    checkinDefaultDate = new Date(),
+    checkoutDefaultDate = new Date();
+  maxDate.setMonth(maxDate.getMonth() + 1);
+  maxDate.setDate(getLastDayOfMonth(maxDate.getFullYear(), maxDate.getMonth()));
+  checkinDefaultDate.setDate(checkinDefaultDate.getDate() + 1);
+  checkoutDefaultDate.setDate(checkoutDefaultDate.getDate() + 3);
 
   renderBlock(
     'search-form-block',
     `
-    <form id='searchForm'>
+    <form id="form">
       <fieldset class="search-filedset">
         <div class="row">
           <div>
             <label for="city">Город</label>
-            <input id="city" type="text" name="city" disabled value="Санкт-Петербург" />
-            <input type="hidden" disabled value="59.9386,30.3141" />
+            <input id="city" name="city" type="text" disabled value="Санкт-Петербург" />
+            <input type="hidden" id="coordinates" name="coordinates" disabled value="59.9386,30.3141" />
           </div>
           <!--<div class="providers">
             <label><input type="checkbox" name="provider" value="homy" checked /> Homy</label>
@@ -49,51 +96,29 @@ export function renderSearchFormBlock(checkin: Date, checkout?: Date): void {
         </div>
         <div class="row">
           <div>
-            <label for="check-in-date">Дата заезда </label>
-            <input id="check-in-date" type="date" value=${selectedCheckin} min=${minCheckout} max=${maxCheckout}  name="checkin" />
+            <label for="check-in-date">Дата заезда</label>
+            <input id="check-in-date" type="date" value="${checkin ? checkin : getISODate(checkinDefaultDate)
+    }" min="${getISODate(minDate)}" max="${getISODate(
+      maxDate
+    )}" name="checkin" />
           </div>
           <div>
             <label for="check-out-date">Дата выезда</label>
-            <input id="check-out-date" type="date" value=${selectedCheckout} min=${minCheckout} max=${maxCheckout} name="checkout" />
+            <input id="check-out-date" type="date" value="${checkout ? checkout : getISODate(checkoutDefaultDate)
+    }" min="${getISODate(minDate)}" max="${getISODate(
+      maxDate
+    )}" name="checkout" />
           </div>
           <div>
             <label for="max-price">Макс. цена суток</label>
             <input id="max-price" type="text" value="" name="price" class="max-price" />
           </div>
           <div>
-            <div><button type='submit'>Найти</button></div>
+            <div><button>Найти</button></div>
           </div>
         </div>
       </fieldset>
     </form>
     `
-  )
-
-  const form = document.getElementById('searchForm');
-  const checkinElement = document.getElementById('check-in-date')
-  const checkoutElement = document.getElementById('check-out-date')
-  const priceElement = document.getElementById('max-price')
-
-  checkinElement.addEventListener('change', function (event) {
-    checkinElement.setAttribute('value', (event.target as HTMLInputElement).value);
-  });
-  checkoutElement.addEventListener('change', function (event) {
-    checkoutElement.setAttribute('value', (event.target as HTMLInputElement).value);
-  });
-  priceElement.addEventListener('change', function (event) {
-    priceElement.setAttribute('value', (event.target as HTMLInputElement).value)
-  })
-
-  form.addEventListener('submit', (event) => {
-    event.preventDefault()
-    const city = document.getElementById('city')
-
-    searchItem({
-      'city': city.getAttribute('value'),
-      'checkin': new Date(checkinElement.getAttribute('value')),
-      'checkout': new Date(checkoutElement.getAttribute('value')),
-      'price': +priceElement.getAttribute('value')
-    })
-    return searchItem;
-  })
+  );
 }
