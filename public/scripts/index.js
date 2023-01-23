@@ -1,13 +1,31 @@
-import { renderSearchFormBlock } from './search-form.js';
+import { renderSearchFormBlock, getFormData } from './search-form.js';
 import { renderSearchStubBlock } from './search-results.js';
-import { renderUserBlock } from './user.js';
-import { renderToast, getUserData, saveUserDataInLocalStorage } from './lib.js';
-window.addEventListener('DOMContentLoaded', () => {
-    saveUserDataInLocalStorage('Bill Gates', 'https://picsum.photos/id/237/200/300');
-    const user = getUserData();
-    console.log(user);
-    renderUserBlock(user.username, user.avatarUrl, 0);
-    renderSearchFormBlock(new Date);
+import { renderUserBlock, getUserData, User, getFavoritesAmount, } from './user.js';
+import { renderToast, renderBlock } from './lib.js';
+window.addEventListener('DOMContentLoaded', function () {
+    localStorage.setItem('user', JSON.stringify({ username: 'Den Warren', avatarUrl: '/img/avatar.png' }));
+    localStorage.setItem('favoritesAmount', JSON.stringify(24));
+    var user = getUserData();
+    var userFavorites = getFavoritesAmount();
+    if (user instanceof User && typeof userFavorites === 'number') {
+        renderUserBlock(user.username, user.avatarUrl, userFavorites);
+    }
+    if (user instanceof User && typeof userFavorites !== 'number') {
+        renderUserBlock(user.username, user.avatarUrl);
+    }
+    if (typeof user === 'string') {
+        renderToast({
+            text: "".concat(user),
+            type: 'success',
+        }, {
+            name: 'Понял',
+            handler: function () {
+                console.log('Уведомление закрыто');
+            },
+        });
+        renderBlock('user-block', "<br/><p>".concat(user, "</p>"));
+    }
+    renderSearchFormBlock();
     renderSearchStubBlock();
-    renderToast({ text: 'Это пример уведомления. Используйте его при необходимости', type: 'success' }, { name: 'Понял', handler: () => { console.log('Уведомление закрыто'); } });
+    getFormData();
 });

@@ -1,51 +1,39 @@
-//-----------------------
-export function getUserData() {
-    const rawUserData = localStorage.getItem("user");
-    let userData;
-    if (rawUserData) {
-        userData = JSON.parse(rawUserData);
-    }
-    if (typeof userData === "object" &&
-        "username" in userData &&
-        "avatarUrl" in userData) {
-        return userData;
-    }
-    // de verificat daca userData e obiect
-    // de verficat daca obiectul contine cheia avatar Url
-    // de verificat daca obiectul contine cheia user.
-    return JSON.parse(rawUserData);
-}
-export function saveUserDataInLocalStorage(userName, avatarUrl) {
-    localStorage.setItem("user", JSON.stringify({ username: userName, avatarUrl: avatarUrl }));
-}
-export function getFavoritesAmount() {
-    const favoritesAmount = localStorage.getItem("favoritesAmount");
-    if (favoritesAmount == null)
-        return 0;
-    return JSON.parse(favoritesAmount);
-}
 export function renderBlock(elementId, html) {
-    const element = document.getElementById(elementId);
+    var element = document.getElementById(elementId);
     element.innerHTML = html;
 }
+export function dateToUnixStamp(date) {
+    return date.getTime() / 1000;
+}
+export function responseToJson(requestPromise) {
+    return requestPromise
+        .then(function (response) {
+        return response.text();
+    })
+        .then(function (response) {
+        return JSON.parse(response);
+    });
+}
+export function getISODate(date) {
+    return "".concat(date.getFullYear(), "-").concat(date.getMonth() + 1, "-").concat(date.getDate() < 10 ? '0' + date.getDate() : date.getDate());
+}
+export function getLastDayOfMonth(year, month) {
+    var date = new Date(year, month + 1, 0);
+    return date.getDate();
+}
 export function renderToast(message, action) {
-    let messageText = "";
+    var messageText = '';
     if (message != null) {
-        messageText = `
-      <div id="info-block" class="info-block ${message.type}">
-        <p>${message.text}</p>
-        <button id="toast-main-action">${(action === null || action === void 0 ? void 0 : action.name) || "Закрыть"}</button>
-      </div>
-    `;
+        messageText = "\n      <div id=\"info-block\" class=\"info-block ".concat(message.type, "\">\n        <p>").concat(message.text, "</p>\n        <button id=\"toast-main-action\">").concat((action === null || action === void 0 ? void 0 : action.name) || 'Закрыть', "</button>\n      </div>\n    ");
     }
-    renderBlock("toast-block", messageText);
-    const button = document.getElementById("toast-main-action");
+    renderBlock('toast-block', messageText);
+    var button = document.getElementById('toast-main-action');
     if (button != null) {
         button.onclick = function () {
             if (action != null && action.handler != null) {
                 action.handler();
             }
-            renderToast(null, undefined);
+            renderToast(null, null);
         };
     }
 }

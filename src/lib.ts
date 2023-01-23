@@ -1,67 +1,64 @@
-import { User } from "./models/user";
-//-----------------------
-export function getUserData(): User | null {
-  const rawUserData = localStorage.getItem("user");
-  let userData: unknown;
-  if (rawUserData) {
-    userData = JSON.parse(rawUserData);
-  }
-  if (
-    typeof userData === "object" &&
-    "username" in userData &&
-    "avatarUrl" in userData
-  ) {
-    return userData as User;
-  }
-  // de verificat daca userData e obiect
-  // de verficat daca obiectul contine cheia avatar Url
-  // de verificat daca obiectul contine cheia user.
-
-  return JSON.parse(rawUserData);
-}
-
-export function saveUserDataInLocalStorage(
-  userName: string,
-  avatarUrl: string
-): void {
-  localStorage.setItem(
-    "user",
-    JSON.stringify({ username: userName, avatarUrl: avatarUrl })
-  );
-}
-
-export function getFavoritesAmount(): number {
-  const favoritesAmount = localStorage.getItem("favoritesAmount");
-  if (favoritesAmount == null) return 0;
-  return JSON.parse(favoritesAmount);
-}
-
-export function renderBlock(elementId: string, html: string): void {
-  const element = document.getElementById(elementId);
+export function renderBlock(elementId: string, html: string) {
+  const element = document.getElementById(elementId) as HTMLElement;
   element.innerHTML = html;
 }
 
-export function renderToast(message, action) {
-  let messageText = "";
+export function dateToUnixStamp(date: Date): number {
+  return date.getTime() / 1000;
+}
+
+export function responseToJson(requestPromise: Promise<any>): Promise<any> {
+  return requestPromise
+    .then((response) => {
+      return response.text();
+    })
+    .then((response) => {
+      return JSON.parse(response);
+    });
+}
+
+export function getISODate(date: Date): string {
+  return `${date.getFullYear()}-${date.getMonth() + 1}-${
+    date.getDate() < 10 ? '0' + date.getDate() : date.getDate()
+  }`;
+}
+
+export function getLastDayOfMonth(year: number, month: number): number {
+  const date = new Date(year, month + 1, 0);
+  return date.getDate();
+}
+
+interface IMessage {
+  type: string;
+  text: string;
+}
+
+interface IAction {
+  name?: string;
+  handler?: () => void;
+}
+
+export function renderToast(message: IMessage | null, action: IAction | null) {
+  let messageText = '';
 
   if (message != null) {
     messageText = `
       <div id="info-block" class="info-block ${message.type}">
         <p>${message.text}</p>
-        <button id="toast-main-action">${action?.name || "Закрыть"}</button>
+        <button id="toast-main-action">${action?.name || 'Закрыть'}</button>
       </div>
     `;
   }
 
-  renderBlock("toast-block", messageText);
+  renderBlock('toast-block', messageText);
 
-  const button = document.getElementById("toast-main-action");
+  const button = document.getElementById('toast-main-action');
   if (button != null) {
     button.onclick = function () {
       if (action != null && action.handler != null) {
         action.handler();
       }
-      renderToast(null, undefined);
+      renderToast(null, null);
     };
   }
 }
