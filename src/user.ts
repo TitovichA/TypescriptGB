@@ -1,4 +1,4 @@
-import { renderBlock } from './lib.js';
+import { renderBlock, renderToast } from './lib.js';
 
 export class User {
   username: string;
@@ -27,7 +27,7 @@ export function getFavoritesAmount(): unknown {
     return Number(amount);
   }
 
-  return false;
+  return 0;
 }
 
 export function renderUserBlock(
@@ -52,12 +52,37 @@ export function renderUserBlock(
       <div class="info">
           <p class="name">${name}</p>
           <p class="fav">
-            <i class="heart-icon${
-  hasFavoriteItems ? ' active' : ''
-}"></i>${favoritesCaption}
+            <i class="heart-icon${hasFavoriteItems ? ' active' : ''
+    }"></i>${favoritesCaption}
           </p>
       </div>
     </div>
     `
   );
+}
+
+export function renderUserInfo(): void {
+  const user = getUserData();
+  const userFavorites = getFavoritesAmount();
+  if (user instanceof User && typeof userFavorites === 'number') {
+    renderUserBlock(user.username, user.avatarUrl, userFavorites);
+  }
+  if (user instanceof User && typeof userFavorites !== 'number') {
+    renderUserBlock(user.username, user.avatarUrl);
+  }
+  if (typeof user === 'string') {
+    renderToast(
+      {
+        text: `${user}`,
+        type: 'success',
+      },
+      {
+        name: 'Понял',
+        handler: () => {
+          console.log('Уведомление закрыто');
+        },
+      }
+    );
+    renderBlock('user-block', `<br/><p>${user}</p>`);
+  }
 }
